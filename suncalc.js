@@ -314,7 +314,7 @@ SunCalc.__proto__.eventInternals = {'noInternals':true, 'toRestartFrom':[]};
 SunCalc.on = (coords, timeName, func) => {
 	if(typeof func != 'function') return 'no function given'
 
-	const timeNames = Object.keys(SunCalc.getTimes([50, -2]))
+	const timeNames = Object.keys(SunCalc.getTimes([...coords]))
 	let realName = timeName.split(' ')[0], timeAdjust, isHours = false, adjustSuffix
 	let isValidName = (timeNames.includes(realName) || realName == 'all')
 	if(!isValidName) return 'available names: ' + timeNames.join(' ')
@@ -357,7 +357,7 @@ SunCalc.on = (coords, timeName, func) => {
             SunCalc.eventInternals.toRestartFrom = []
 			toRestartFromCopy.forEach(onArgsArr => SunCalc.on(...onArgsArr))
 		}
-
+        
 		setInterval(
 			() => {
 				SunCalc.eventInternals.addToConsistency += 1000
@@ -377,7 +377,6 @@ SunCalc.on = (coords, timeName, func) => {
 		let when = 0
 		let atDate = (SunCalc.getTimes(new Date(), ...coords)[name]).getTime();
 		if(isNaN(atDate)) {
-			console.log(name, 'does not occur here today, event will be placed when it does')
 			return
 		} else {
 			if(timeAdjust) atDate += timeAdjust
@@ -404,6 +403,38 @@ SunCalc.on = (coords, timeName, func) => {
 	setTimeout(() => {
 		SunCalc.on(coords, timeName, func)
 	}, 1000*60*60*24)
+}
+
+SunCalc.when = (coords, time, callback) => {
+	const timeNames = Object.keys(SunCalc.getTimes([...coords]))
+	let realName = time.split(' ')[0], timeAdjust, isHours = false, adjustSuffix
+	let isValidName = timeNames.includes(realName)
+	if(!isValidName) return 'available names: ' + timeNames.join(' ')
+	if(time != realName) {
+		timeAdjust = time.split(' ')[1]
+		adjustSuffix = timeAdjust
+		if(timeAdjust.toLowerCase().includes('h')) isHours = true
+		timeAdjust = parseInt(timeAdjust)
+		timeAdjust *= (1000*60)
+		if(isHours) timeAdjust *= 60
+	}
+	
+	let when = 0
+	let atDate = (SunCalc.getTimes(new Date(), ...coords)[realName]).getTime();
+	if(isNaN(atDate)) {
+		return
+	} else {
+		if(timeAdjust) atDate += timeAdjust
+	}
+	
+	let now = new Date().getTime()
+	
+	if((now - atDate) > 0) when += (1000*60*60*24)
+	when += (atDate - now)
+	if(typeof callback == 'function') {
+		return callback(when, time)
+	}
+	return when
 }
 
 
